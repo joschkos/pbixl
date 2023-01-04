@@ -7,6 +7,7 @@ Public Module pbixl_DaxQuery
     <ExcelFunction(Description:="pbixl", Category:="pbixl", IsMacroType:=True, IsVolatile:=False, IsHidden:=False, Name:="pbixl.DAX")>
     Public Function pbixl_Query(ConnName As Object, Statement As Object, Hint As Object) As Object
 
+
         Dim blnNoHeader As Boolean = False
         If TypeOf Hint Is ExcelDna.Integration.ExcelMissing Then
             Hint = ""
