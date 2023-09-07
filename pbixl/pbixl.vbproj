@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.props" Condition="Exists('..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{408F537F-D57F-4601-81E2-726C7DAF3C92}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>pbixl</RootNamespace>
+    <AssemblyName>pbixl</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>Windows</MyType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>pbixl.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>pbixl.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="C1.Win.C1FlexGrid.4, Version=4.6.20123.730, Culture=neutral, PublicKeyToken=79882d576c6336da, processorArchitecture=MSIL" />
+    <Reference Include="ExcelDna.Integration, Version=1.1.0.0, Culture=neutral, PublicKeyToken=f225e9659857edbe, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Integration.1.7.0-rc6\lib\net452\ExcelDna.Integration.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.15.0.1\lib\net452\Microsoft.Office.Interop.Excel.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Vbe.Interop, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.15.0.1\lib\net452\Microsoft.Vbe.Interop.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Office, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.15.0.1\lib\net452\Office.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="System.Xml.Linq" />
+    <Import Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Connections\clsConnections.vb" />
+    <Compile Include="Connections\clsTCP.vb" />
+    <Compile Include="Connections\dlgSelectConn.Designer.vb">
+      <DependentUpon>dlgSelectConn.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Connections\dlgSelectConn.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Query\clsQryMgr.vb" />
+    <Compile Include="DAXQueryEditor\Query\clsQuery.vb" />
+    <Compile Include="DAXQueryEditor\Cube\clsTabularModel.vb" />
+    <Compile Include="DAXQueryEditor\Table\ctrlColumnHeader.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Table\ctrlColumnHeader.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Cube\ctrlCube.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Cube\ctrlCube.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Query\ctrlDaxQuery.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Query\ctrlDaxQuery.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Table\ctrlFilter.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Table\ctrlFilter.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Table\ctrlTable.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Table\ctrlTable.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Table\dlgDax.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Table\dlgDax.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Table\dlgFilter.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Table\dlgFilter.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DAXQueryEditor\Main\frmMain.Designer.vb" />
+    <Compile Include="DAXQueryEditor\Main\frmMain.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Functions\pbixl_DaxQuery.vb" />
+    <Compile Include="clsMain.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Connections\dlgSelectConn.resx">
+      <DependentUpon>dlgSelectConn.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DAXQueryEditor\Table\ctrlColumnHeader.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Cube\ctrlCube.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Query\ctrlDaxQuery.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Table\ctrlFilter.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Table\ctrlTable.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Table\dlgDax.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Table\dlgFilter.resx" />
+    <EmbeddedResource Include="DAXQueryEditor\Main\frmMain.resx" />
+    <EmbeddedResource Include="My Project\licenses.licx" />
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="pbixl-AddIn.dna" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Properties\ExcelDna.Build.props">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Wheel.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\pbixl.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\pbiXLTable.ico" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.props'))" />
+    <Error Condition="!Exists('..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.targets'))" />
+    <Error Condition="!Exists('..\packages\ExcelDna.Interop.15.0.1\build\ExcelDna.Interop.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ExcelDna.Interop.15.0.1\build\ExcelDna.Interop.targets'))" />
+  </Target>
+  <Import Project="..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.targets" Condition="Exists('..\packages\ExcelDna.AddIn.1.7.0-rc6\build\ExcelDna.AddIn.targets')" />
+  <Import Project="..\packages\ExcelDna.Interop.15.0.1\build\ExcelDna.Interop.targets" Condition="Exists('..\packages\ExcelDna.Interop.15.0.1\build\ExcelDna.Interop.targets')" />
+</Project>

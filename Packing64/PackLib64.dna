@@ -1,0 +1,5 @@
+<DnaLibrary Name="pbixl64" Description="PackLib Test Add-In" Language="VB" RuntimeVersion="v4.0">
+	<ExternalLibrary Path="pbixl.dll" Pack="true" />
+	<Reference Path="C1.Win.C1FlexGrid.4.dll" Pack="true" />
+	<ExcelDnaPackCompressResources>false</ExcelDnaPackCompressResources>
+</DnaLibrary>

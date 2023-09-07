@@ -1,0 +1,35 @@
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\bin\Debug\pbixl.dll
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\bin\Debug\pbixl.pdb
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\bin\Debug\pbixl.xml
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.vbprojAssemblyReference.cache
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.Resources.resources
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.vbproj.GenerateResource.cache
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.vbproj.CoreCompileInputs.cache
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.dll
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.xml
+C:\Users\Joschko\AppData\Local\Temporary Projects\pbixl\obj\Debug\pbixl.pdb
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\pbixl.dll
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\pbixl.pdb
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\pbixl.xml
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\ExcelDna.Integration.xml
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.vbprojAssemblyReference.cache
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.Resources.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.vbproj.GenerateResource.cache
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.vbproj.CoreCompileInputs.cache
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.vbproj.CopyComplete
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dll
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.xml
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.pdb
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\C1.Win.C1FlexGrid.4.dll
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\C1.Win.C1FlexGrid.4.xml
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dll.licenses
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.ctrlColumnHeader.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.ctrlCube.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.ctrlDaxQuery.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.ctrlFilter.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.ctrlTable.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dlgDax.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dlgFilter.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.frmMain.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dlgSelectConn.resources
+C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\pbixl.dll.config
