@@ -1,5 +1,5 @@
 # What Does It Do?
-The addin wants to help to connect an Excel Table directly to a Power Bi Dataset.
+The addin wants to help to connect an Excel Table directly to a Power BI Dataset.
 The add-in is in its early development stages, but it currently offers:
 
 - Connect to Power BI Desktop, Power BI Service, SSAS Tabular Models
