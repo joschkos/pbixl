@@ -11,5 +11,5 @@ The add-in is in its early development stages, but it currently offers:
 # Installation
 1. Download the current version of pbixl.
 
-    [a link](https://github.com/joschkos/pbixl/Add-Ins/pbixl64.zip)
+    [a link](https://github.com/joschkos/pbixl/tree/main/Add-Ins/pbixl64.zip)
   
