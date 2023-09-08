@@ -8,3 +8,8 @@ The add-in is in its early development stages, but it currently offers:
 
 ![pbixl001](https://github.com/joschkos/pbixl/assets/50075326/471c05ea-1bf0-44fe-98f4-341605acba46)
 
+# Installation
+1. Download the current version of pbixl.
+
+    [a link](https://github.com/joschkos/pbixl/Add-Ins/pbixl64.zip)
+  
