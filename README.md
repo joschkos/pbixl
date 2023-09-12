@@ -9,7 +9,10 @@ The add-in is in its early development stages, but it currently offers:
 ![pbixl001](https://github.com/joschkos/pbixl/assets/50075326/471c05ea-1bf0-44fe-98f4-341605acba46)
 
 # Installation
-1. Download the current version of pbixl.
+1. Download the right version of pbixl. Check which one fits to your Excel Installation.
 
-    [a link](https://github.com/joschkos/pbixl/tree/main/Add-Ins)
-  
+    [The Add-Ins](https://github.com/joschkos/pbixl/tree/main/Add-Ins)
+
+2. The add-in can be installed by double-clicking the xll file in the zip file.
+3. After opening a Power BI Desktop File click on the pbixl tab in excel.
+4. Select the running Power BI Desktop instance and the query editor will be shown.
