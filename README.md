@@ -22,7 +22,7 @@ This Add-In is made with [Excel-DNA](https://github.com/Excel-DNA)
 The Add-In is referencing a data grid which is not part of this repository.
 
 # Known Issues
-The Add-In needs Excel 2016 or higher.
+The Add-In needs Excel 2013 or higher.
 There is a bug if 2 instance of Power BI Desktop are open.
 Please do not copy a table connected to Power BI into another Workbook. 
 
