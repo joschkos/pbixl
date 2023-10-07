@@ -1,7 +1,14 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\pbixl",
+    "\\pbixl\\My Project",
+    "\\pbixl\\My Project\\DAXQueryEditor",
+    "\\pbixl\\My Project\\Functions",
+    "\\pbixl\\obj",
+    "\\pbixl\\Properties",
+    "\\pbixl\\Resources"
   ],
-  "SelectedNode": "\\C:\\Users\\Joschko\\Source\\Repos\\pbixl_github",
+  "SelectedNode": "\\pbixl\\My Project\\Functions\\pbixl_DaxQuery.vb",
   "PreviewInSolutionExplorer": false
 }
