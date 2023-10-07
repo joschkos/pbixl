@@ -33,3 +33,6 @@ C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dlgFilter.resources
 C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.frmMain.resources
 C:\Users\Joschko\source\repos\pbixl\pbixl\obj\Debug\pbixl.dlgSelectConn.resources
 C:\Users\Joschko\source\repos\pbixl\pbixl\bin\Debug\pbixl.dll.config
+C:\Users\Joschko\Source\Repos\pbixl_github\pbixl\obj\Debug\pbixl.dll
+C:\Users\Joschko\Source\Repos\pbixl_github\pbixl\obj\Debug\pbixl.xml
+C:\Users\Joschko\Source\Repos\pbixl_github\pbixl\obj\Debug\pbixl.pdb
