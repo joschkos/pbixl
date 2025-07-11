@@ -7,6 +7,7 @@ Public Class ctrlFilter
     Enum enFieldType
         Level = 1
         Measure = 2
+        iFunction = 3
     End Enum
 
 
@@ -22,6 +23,7 @@ Public Class ctrlFilter
         IsError = 3
         NoResult = 4
         Preview = 5
+        ImpMeasure = 6
     End Enum
 
 
@@ -38,7 +40,11 @@ Public Class ctrlFilter
         End Set
     End Property
 
-
+    Private ReadOnly Property IsImplicitCast As Boolean
+        Get
+            Return Me.QueryColumn.isImplicitCast
+        End Get
+    End Property
 
     Private ReadOnly Property RunAsync As Boolean
         Get
@@ -154,6 +160,16 @@ Public Class ctrlFilter
                                         Me.txtErr.Visible = True
                                     End Sub)
 
+            ElseIf value = enControlState.ImpMeasure Then
+                Me.InvokeIfRequired(Sub()
+                                        Me.lblApply.Enabled = True
+                                        Me.txtBox.Enabled = True
+                                        Me.fg.Visible = False
+                                        Me.pnlCanc.Visible = False
+                                        Me.pnlExec.Visible = False
+                                        Me.txtErr.Visible = False
+                                    End Sub)
+
             ElseIf value = enControlState.Preview Then
                 Me.InvokeIfRequired(Sub()
                                         Me.lblApply.Enabled = True
@@ -172,7 +188,7 @@ Public Class ctrlFilter
 
 
 
-    Private Property DaxFilter As String
+    Friend Property DaxFilter As String
     Private Property txtErr As System.Windows.Forms.TextBox
     Private Property pnlExec As System.Windows.Forms.Panel
     Private Property lblCancel As System.Windows.Forms.LinkLabel
@@ -180,7 +196,7 @@ Public Class ctrlFilter
 
     Private Property lblApply As System.Windows.Forms.Label
     Private Property lblClear As System.Windows.Forms.Label
-    Private Property txtBox As System.Windows.Forms.TextBox
+    Friend Property txtBox As System.Windows.Forms.TextBox
 
     Private Property pnlAZ As System.Windows.Forms.Panel
     Private Property btnAZ As System.Windows.Forms.Button
@@ -542,7 +558,7 @@ Public Class ctrlFilter
         End If
 
         Me.Controls.Add(Me.btnTy)
-
+        AddHandler Me.btnTy.Click, AddressOf btnTy_Click
 
         Me.btnInfo = New System.Windows.Forms.Button With {.Left = 8, .Width = 18, .Height = 18, .Top = 104 + 24, .Anchor = 5, .FlatStyle = FlatStyle.Flat, .ImageAlign = ContentAlignment.MiddleCenter}
         Me.btnInfo.FlatAppearance.BorderSize = 0
@@ -554,15 +570,28 @@ Public Class ctrlFilter
 
 
 
+        If Me.IsImplicitCast = True Then
+            Me.ControlState = enControlState.ImpMeasure
+            Me.btnTy.Image = Me.ctrlColumnHeader.ctrlTable.ctrlDaxQuery.ImageList.Images("TypeNumber.ico")
+            Me.Height = Me.Height - 120
+            Me.SelectionMode = enSelectionMode.AllSearch
+        Else
+            Me.LoadPreview()
+        End If
 
 
 
 
-        Me.LoadPreview()
+
+
 
 
 
     End Sub
+
+    Private Sub btnTy_Click(sender As Object, e As EventArgs)
+    End Sub
+
 
     Private Sub btnInfo_Click(sender As Object, e As EventArgs)
         Dim df As New dlgFilter
@@ -610,13 +639,19 @@ Public Class ctrlFilter
         t += "Micro*" & vbCrLf
         t += "*soft" & vbCrLf
         t += "*Las Vegas" & vbCrLf
-        t += """*Orgegon""" & vbCrLf
+        t += """*Oregon""" & vbCrLf
         t += "Andrew Schmidt or ""*Oregon""" & vbCrLf
         t += "not blank()" & vbCrLf
+        t += "Andre*midt" & vbCrLf
         t += "Andre* and *midt" & vbCrLf
 
 
-        If Me.DataType = enDataType.DateTime Then
+
+
+
+        If Me.IsImplicitCast = True Then
+            df.TextBox1.Text = n
+        ElseIf Me.DataType = enDataType.DateTime Then
             df.TextBox1.Text = d
         ElseIf Me.DataType = enDataType.Number Then
             df.TextBox1.Text = n
@@ -854,7 +889,11 @@ Public Class ctrlFilter
 
         If e.KeyChar = ChrW(Keys.Enter) Then
             e.Handled = True
-            Me.LoadPreview()
+
+            If Me.QueryColumn.isImplicitCast = False Then
+                Me.LoadPreview()
+            End If
+
         End If
 
     End Sub
@@ -945,7 +984,7 @@ Public Class ctrlFilter
 
         If Me.txtBox.Text.Trim <> "" Then
             Cursor.Current = Cursors.WaitCursor
-            If Me.ValidExpression = False Then
+            If Me.ValidExpression = False And Me.QueryColumn.FieldType <> clsQueryColumn.enFieldType.ImpMeasure Then
                 Cursor.Current = Cursors.Default
                 MsgBox("Please check the filter expression. " & Me._errValid.Message, MsgBoxStyle.Critical)
                 Exit Sub
@@ -963,6 +1002,7 @@ Public Class ctrlFilter
         End If
 
         With Me.QueryColumn
+
             .IsSelected = True
             .SelectionMode = Me.SelectionMode
             If Not Me.htSel Is Nothing Then
@@ -977,15 +1017,17 @@ Public Class ctrlFilter
             .htSel = Me.htSel.Clone
             .Sort = Me.Sort
             .SearchTerm = Me.txtBox.Text
+
+
             .DaxStmnt = Me.DaxStmnt
             .DaxFilter = Me.DaxFilter
+
+
             .FilterControlGUID = Me.GUID
         End With
 
 
         Me.ctrlColumnHeader.ctrlTable.ctrlDaxQuery.FilterControl = Nothing
-
-
         Me.ctrlColumnHeader.ctrlTable.ctrlDaxQuery.RefreshPreview()
 
 
@@ -997,6 +1039,8 @@ Public Class ctrlFilter
 
 
     Private Sub LoadPreview()
+
+
 
         If Me.txtBox.Text.Trim <> "" And Me.SelectionMode = enSelectionMode.AllSelected Then
             Me.SelectionMode = enSelectionMode.AllSearch
@@ -2004,9 +2048,7 @@ Public Class ctrlFilter
                 Dim strR As String = ""
 
 
-#Region "Boolean"
-
-                If Me.fc.DataType = enDataType.Bool Then
+                If Me.fc.DataType = enDataType.Bool And Me.fc.IsImplicitCast = False Then
 
                     If Me.BlankFunc = True Then
 
@@ -2086,11 +2128,10 @@ Public Class ctrlFilter
                         End If
 
                     End If
-#End Region
 
-#Region "Number"
-                ElseIf Me.fc.DataType = enDataType.Number Then
+                ElseIf Me.fc.DataType = enDataType.Text And Me.fc.IsImplicitCast = False Then
 
+                    'blank() 
                     If Me.BlankFunc = True Then
 
                         If Me.TrueFalse = False Then
@@ -2147,6 +2188,7 @@ Public Class ctrlFilter
                                 End If
                             End If
 
+
                         End If
 
                         'len()
@@ -2158,28 +2200,142 @@ Public Class ctrlFilter
                             strR = "NOT LEN(" & Me.fc.ColUni & ")" & Me.Ope
                         End If
 
-                    Else
+                        'Ap*le
+                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.InBetAsteriks = True And Me.Ope = "" Then
                         If Me.Is_Not = False Then
-                            If Me.Ope = "" Then
-                                strR = Me.fc.ColUni & "=" & Me.searchCrit
-                            Else
-                                strR = Me.fc.ColUni & Me.Ope & Me.searchCrit
-                            End If
+                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
+                            strR = "LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
+                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
                         Else
-                            If Me.Ope = "" Then
-                                strR = "NOT " & Me.fc.ColUni & "=" & Me.searchCrit
-                            Else
-                                strR = "NOT " & Me.fc.ColUni & Me.Ope & Me.searchCrit
-                            End If
+                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
+                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
+                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
+                        End If
+
+                        '"Ap*le"
+                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.InBetAsteriks = True And Me.Ope = "" Then
+                        If Me.Is_Not = False Then
+                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
+                            strR = "LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
+                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
+                        Else
+                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
+                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
+                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
+                        End If
+
+                        'Apple
+                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.Ope = "" Then
+
+                        If Me.Is_Not = False Then
+                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit & """)"
+                        Else
+                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit & """)"
+                        End If
+
+                        '*Apple*
+                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False Then
+                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        Else
+                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        End If
+
+                        '"*Apple*"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False Then
+                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        Else
+                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        End If
+
+                        '="*Apple*"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False And Me.Ope = "=" Then
+                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        ElseIf Me.Is_Not = True And Me.Ope = "=" Then
+                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        ElseIf Me.Is_Not = False And Me.Ope = "<>" Then
+                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        ElseIf Me.Is_Not = True And Me.Ope = "<>" Then
+                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
+                        End If
+
+                        'Apple*
+                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False Then
+                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '"Apple*"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False Then
+                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '="Apple*"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
+                        If Me.Is_Not = False Then
+                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '*Apple
+                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
+                        If Me.Is_Not = False Then
+                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '"*Apple"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
+                        If Me.Is_Not = False Then
+                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '="*Apple"
+                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
+                        If Me.Is_Not = False Then
+                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        Else
+                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
+                        End If
+
+                        '"Apple"
+                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.Ope = "" Then
+                        If Me.Is_Not = False Then
+                            strR = Me.fc.ColUni & "=" & """" & Me.searchCrit & """"
+                        Else
+                            strR = "NOT " & Me.fc.ColUni & "=" & """" & Me.searchCrit & """"
+                        End If
+
+                        '=Apple
+                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.Ope <> "" Then
+                        If Me.Is_Not = False Then
+                            strR = Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
+                        Else
+                            strR = "NOT " & Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
+                        End If
+
+                        '="Apple"
+                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.Ope <> "" Then
+                        If Me.Is_Not = False Then
+                            strR = Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
+                        Else
+                            strR = "NOT " & Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
                         End If
 
                     End If
 
-#End Region
-
-#Region "DateTime"
-                ElseIf Me.fc.DataType = enDataType.DateTime Then
-
+                ElseIf Me.fc.DataType = enDataType.DateTime And Me.fc.IsImplicitCast = False Then
 
                     If Me.BlankFunc = True Then
 
@@ -2395,19 +2551,8 @@ Public Class ctrlFilter
 
                     End If
 
+                ElseIf Me.fc.DataType = enDataType.Number Or Me.fc.IsImplicitCast = True Then
 
-                End If
-
-#End Region
-
-#Region "text"
-
-
-                'text
-                If Me.fc.DataType = enDataType.Text Then
-
-
-                    'blank() 
                     If Me.BlankFunc = True Then
 
                         If Me.TrueFalse = False Then
@@ -2464,7 +2609,6 @@ Public Class ctrlFilter
                                 End If
                             End If
 
-
                         End If
 
                         'len()
@@ -2476,144 +2620,25 @@ Public Class ctrlFilter
                             strR = "NOT LEN(" & Me.fc.ColUni & ")" & Me.Ope
                         End If
 
-                        'Ap*le
-                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.InBetAsteriks = True And Me.Ope = "" Then
+                    Else
                         If Me.Is_Not = False Then
-                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
-                            strR = "LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
-                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
+                            If Me.Ope = "" Then
+                                strR = Me.fc.ColUni & "=" & Me.searchCrit
+                            Else
+                                strR = Me.fc.ColUni & Me.Ope & Me.searchCrit
+                            End If
                         Else
-                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
-                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
-                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
-                        End If
-
-                        '"Ap*le"
-                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.InBetAsteriks = True And Me.Ope = "" Then
-                        If Me.Is_Not = False Then
-                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
-                            strR = "LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
-                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
-                        Else
-                            Dim intInd As Integer = Me.searchCrit.IndexOf("*")
-                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & intInd & ")=""" & Me.searchCrit.Substring(0, intInd) &
-                                """ && RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1 - intInd) & ")=""" & Me.searchCrit.Substring(intInd + 1) & """"
-                        End If
-
-                        'Apple
-                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.Ope = "" Then
-
-                        If Me.Is_Not = False Then
-                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit & """)"
-                        Else
-                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit & """)"
-                        End If
-
-                        '*Apple*
-                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False Then
-                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        Else
-                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        End If
-
-                        '"*Apple*"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False Then
-                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        Else
-                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        End If
-
-                        '="*Apple*"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False And Me.Ope = "=" Then
-                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        ElseIf Me.Is_Not = True And Me.Ope = "=" Then
-                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        ElseIf Me.Is_Not = False And Me.Ope = "<>" Then
-                            strR = "NOT CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        ElseIf Me.Is_Not = True And Me.Ope = "<>" Then
-                            strR = "CONTAINSSTRING(" & Me.fc.ColUni & ",""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 2) & """)"
-                        End If
-
-                        'Apple*
-                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False Then
-                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '"Apple*"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False Then
-                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '="Apple*"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") = False And Me.searchCrit.EndsWith("*") Then
-                        If Me.Is_Not = False Then
-                            strR = "LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT LEFT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(0, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '*Apple
-                    ElseIf Me.Quotes = False And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
-                        If Me.Is_Not = False Then
-                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '"*Apple"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope = "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
-                        If Me.Is_Not = False Then
-                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")=""" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '="*Apple"
-                    ElseIf Me.Quotes = True And Me.Asteriks = True And Me.Ope <> "" And Me.searchCrit.StartsWith("*") = True And Me.searchCrit.EndsWith("*") = False Then
-                        If Me.Is_Not = False Then
-                            strR = "RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        Else
-                            strR = "NOT RIGHT(" & Me.fc.ColUni & "," & (Me.searchCrit.Length - 1).ToString & ")" & Me.Ope & """" & Me.searchCrit.Substring(1, Me.searchCrit.Length - 1) & """"
-                        End If
-
-                        '"Apple"
-                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.Ope = "" Then
-                        If Me.Is_Not = False Then
-                            strR = Me.fc.ColUni & "=" & """" & Me.searchCrit & """"
-                        Else
-                            strR = "NOT " & Me.fc.ColUni & "=" & """" & Me.searchCrit & """"
-                        End If
-
-                        '=Apple
-                    ElseIf Me.Quotes = False And Me.Asteriks = False And Me.Ope <> "" Then
-                        If Me.Is_Not = False Then
-                            strR = Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
-                        Else
-                            strR = "NOT " & Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
-                        End If
-
-                        '="Apple"
-                    ElseIf Me.Quotes = True And Me.Asteriks = False And Me.Ope <> "" Then
-                        If Me.Is_Not = False Then
-                            strR = Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
-                        Else
-                            strR = "NOT " & Me.fc.ColUni & Me.Ope & """" & Me.searchCrit & """"
+                            If Me.Ope = "" Then
+                                strR = "NOT " & Me.fc.ColUni & "=" & Me.searchCrit
+                            Else
+                                strR = "NOT " & Me.fc.ColUni & Me.Ope & Me.searchCrit
+                            End If
                         End If
 
                     End If
 
                 End If
 
-#End Region
 
                 Return " " & strR & " "
             End Get
@@ -2632,7 +2657,7 @@ Public Class ctrlFilter
 
     End Class
 
-    Private Function DaxStmnt() As String
+    Friend Function DaxStmnt() As String
 
         Dim strR As String = ""
         Dim strSort As String = ""
@@ -2643,7 +2668,9 @@ Public Class ctrlFilter
             strSort = "desc"
         End If
 
+
         If Me.txtBox.Text.Trim = "" AndAlso Me.ContextType = enContextType.LevelNon Then
+            Me.DaxFilter = ""
             strR = "DEFINE " & vbCrLf
             strR += "var x0 = VALUES(" & Me.ColUni & ")" & vbCrLf
             strR += "EVALUATE" & Chr(13) & Chr(10) & vbCrLf

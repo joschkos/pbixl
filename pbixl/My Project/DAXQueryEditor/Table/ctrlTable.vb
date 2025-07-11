@@ -167,7 +167,6 @@
                 Return
             End If
 
-
             Me._ctrlState = value
             If Me._ctrlState = enctrlState.ready Then
 
@@ -213,6 +212,13 @@
                                     End Sub)
             ElseIf Me._ctrlState = enctrlState.exception Then
                 Me.InvokeIfRequired(Sub()
+
+                                        If Me.Err.Source.ToLower.Trim = "adodb.recordset" Then
+                                            Me.ctrlDaxQuery.ShowData = False
+                                            Me.ctrlDaxQuery.RefreshPreview()
+                                            Exit Sub
+                                        End If
+
 
                                         Dim xLine As String = ""
                                         Try
@@ -303,7 +309,7 @@
         Me.pnlLoading.Controls.Add(Me.lblCancel)
         AddHandler Me.lblCancel.Click, AddressOf Me.lblCancel_Click
 
-        Me.lblSwitchPreview = New System.Windows.Forms.LinkLabel With {.Text = "enable preview..", .Top = 50, .Left = 20, .Anchor = 5, .Visible = False}
+        Me.lblSwitchPreview = New System.Windows.Forms.LinkLabel With {.Text = "Click here to refresh the preview..", .Top = 50, .Left = 20, .Anchor = 5, .Visible = False, .Width = 200}
         Me.fgT.Controls.Add(Me.lblSwitchPreview)
         AddHandler Me.lblSwitchPreview.Click, AddressOf Me.lblSwitchPreview_Click
 
@@ -611,9 +617,18 @@
                                                     If blnCancelled = True Then Me.fgT.Visible = False : Exit Sub
                                                     If Not TryCast(c.UserData, clsQueryColumn) Is Nothing Then
                                                         Dim x As String = Me.ctrlDaxQuery.tm.GetFormat(TryCast(c.UserData, clsQueryColumn))
+
+                                                        If x.Trim = "" Then
+                                                            Try
+                                                                x = Me.ctrlDaxQuery.tm.GetMeasure(TryCast(c.UserData, clsQueryColumn).UniName).FormatString
+                                                            Catch ex As Exception
+                                                            End Try
+                                                        End If
+
                                                         c.Format = x
                                                         c.StyleFixedDisplay.Format = x
                                                     End If
+
                                                 Next c
 
                                             End If
