@@ -10,6 +10,9 @@
     Private Property pb As PictureBox
     Friend Property Err As Exception
 
+    Friend Property btnOK As System.Windows.Forms.Button
+
+
     Friend Property tm As clsTabularModel
 
     Public Enum enctrlState
@@ -31,6 +34,7 @@
                                         Me.pnlLoading.Visible = False
                                         Me.pnlException.Visible = False
                                         pb.Image = Me.ctrlDaxQuery.ImageList.Images("PowerBI_OK.ico")
+                                        Me.ctrlDaxQuery.btnOK.Enabled = True
                                     End Sub)
             ElseIf Me._ctrlState = enctrlState.loading Then
                 Me.InvokeIfRequired(Sub()
@@ -38,15 +42,26 @@
                                         Me.pnlLoading.Visible = True
                                         Me.pnlException.Visible = False
                                         pb.Image = CType(My.Resources.Wheel, System.Drawing.Image)
+                                        Me.ctrlDaxQuery.btnOK.Enabled = False
                                     End Sub)
             Else
                 Me.InvokeIfRequired(Sub()
-                                        Me.ctrlDaxQuery.ctrlTable.ctrlState = ctrlTable.enctrlState.init
-                                        Me.pnlMain.Visible = False
-                                        Me.pnlLoading.Visible = False
-                                        Me.pnlException.Visible = True
-                                        Me.pnlException.Controls(0).Text = Me.Err.Message
-                                        pb.Image = Me.ctrlDaxQuery.ImageList.Images("PowerBI_NotOK.ico")
+                                        Try
+                                            If Not Me.ctrlDaxQuery.Parent.Parent Is Nothing Then
+                                                TryCast(Me.ctrlDaxQuery.Parent.Parent, frmMain).btnOK.Enabled = False
+                                            End If
+                                            Me.ctrlDaxQuery.ctrlTable.ctrlState = ctrlTable.enctrlState.init
+                                            Me.pnlMain.Visible = False
+                                            Me.pnlLoading.Visible = False
+                                            Me.pnlException.Visible = True
+                                            Me.pnlException.Controls(0).Text = Me.Err.Message
+                                            pb.Image = Me.ctrlDaxQuery.ImageList.Images("PowerBI_NotOK.ico")
+                                            Me.ctrlDaxQuery.btnOK.Enabled = False
+                                        Catch ex As Exception
+                                            Exit Sub
+                                        End Try
+
+
                                     End Sub)
             End If
 
@@ -108,9 +123,12 @@
 
 
 
-    Public Sub New(ctrlDaxQuery As ctrlDaxQuery)
+    Public Sub New(ctrlDaxQuery As ctrlDaxQuery, btnOK As Windows.Forms.Button)
 
         InitializeComponent()
+
+        Me.btnOK = btnOK
+
 
         Me.ctrlDaxQuery = ctrlDaxQuery
 
@@ -184,6 +202,10 @@
     End Sub
 
     Private Sub fg_MouseClick(sender As Object, e As System.Windows.Forms.MouseEventArgs)
+
+
+
+
 
         Dim hti As C1.Win.C1FlexGrid.HitTestInfo = Me.fg.HitTest(e.X, e.Y)
         If hti.Row <= 0 OrElse hti.Row + 1 > Me.fg.Rows.Count Then
@@ -303,7 +325,6 @@
             Next i
 
 
-
             Me.ctrlDaxQuery.RefreshPreview()
 
 
@@ -365,6 +386,7 @@
 
 
                                     For Each c As clsTabularModel.Cube In tm.Cubes
+
 
                                         For Each d As clsTabularModel.Dimension In c.DimensionsSortedByTypeAndName
 

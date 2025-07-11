@@ -157,9 +157,93 @@ Public Class clsTabularModel
         Me.Update()
     End Sub
 
+    Public Function GetAllSelectedObjectFields(tabObj As Object) As List(Of Object)
+
+        Dim lstRes As New List(Of Object)
+
+        If tabObj Is Nothing Then
+            Return lstRes
+        End If
+
+
+        If Not TryCast(tabObj, clsTabularModel.Level) Is Nothing Then
+
+            lstRes.Add(TryCast(tabObj, clsTabularModel.Level))
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.Measure) Is Nothing Then
+
+            lstRes.Add(TryCast(tabObj, clsTabularModel.Measure))
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.Dimension) Is Nothing Then
+
+            Dim d As clsTabularModel.Dimension = TryCast(tabObj, clsTabularModel.Dimension)
+            For Each l In d.LevelsAttrVisible
+                lstRes.Add(l)
+            Next l
+            For Each m In d.MeasuresVisible
+                lstRes.Add(m)
+            Next m
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.DisplayFolder) Is Nothing Then
+
+            Dim df As clsTabularModel.DisplayFolder = TryCast(tabObj, clsTabularModel.DisplayFolder)
+            For Each l As clsTabularModel.Level In df.AllLevelsSortedByName
+                lstRes.Add(l)
+            Next l
+            For Each m As clsTabularModel.Measure In df.AllMeasuresSortedByName
+                lstRes.Add(m)
+            Next m
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.Hierarchy) Is Nothing Then
+
+            Dim h As clsTabularModel.Hierarchy = TryCast(tabObj, clsTabularModel.Hierarchy)
+            For Each l As clsTabularModel.Level In h.LevelsAttrVisible
+                lstRes.Add(l)
+            Next l
+
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.Members) Is Nothing Then
+
+            Dim l As clsTabularModel.Level = TryCast(tabObj, clsTabularModel.Members).Level
+            lstRes.Add(l)
+
+        ElseIf Not TryCast(tabObj, clsTabularModel.Cube) Is Nothing Then
+
+            Dim c As clsTabularModel.Cube = TryCast(tabObj, clsTabularModel.Cube)
+            For Each d As clsTabularModel.Dimension In c.Dimensions
+                For Each l As clsTabularModel.Level In d.LevelsAttrVisible
+                    lstRes.Add(l)
+                Next l
+                For Each m As clsTabularModel.Measure In d.MeasuresVisible
+                    lstRes.Add(m)
+                Next m
+            Next d
+
+        End If
 
 
 
+        For i As Integer = lstRes.Count - 1 To 0 Step -1
+            If lstRes.Item(i).IsSelected = False Then
+                lstRes.RemoveAt(i)
+            End If
+        Next i
+
+        Dim strKeys As New List(Of String)
+        For i As Integer = lstRes.Count - 1 To 0 Step -1
+            If strKeys.Contains(lstRes.Item(i).UniName.ToString.ToLower) Then
+                lstRes.RemoveAt(i)
+            Else
+                strKeys.Add(lstRes.Item(i).UniName.ToString.ToLower)
+            End If
+        Next i
+
+
+
+        Return lstRes
+
+
+    End Function
 
 
 
@@ -331,6 +415,20 @@ Public Class clsTabularModel
 
         Public Property ds As DataSet
 
+        Public ReadOnly Property Catalog As String
+            Get
+                Try
+                    For Each r As DataRow In Me.ds.Tables("CUBES").Rows
+                        Return (r("CATALOG_NAME").ToString)
+                    Next r
+                Catch ex As Exception
+                    Return ""
+                End Try
+                Return ""
+            End Get
+        End Property
+
+
         Public ReadOnly Property DimensionsSortedByTypeAndName As List(Of Dimension)
             Get
                 Me.Dimensions.Sort(Function(x As Dimension, y As Dimension) x.SortByTypeAndName.CompareTo(y.SortByTypeAndName))
@@ -465,6 +563,27 @@ Public Class clsTabularModel
             Me.ds = ds
             Me.CUBE_NAME = CUBE_NAME
         End Sub
+
+        Public Sub SelectLevel(strUniName As String)
+            For Each d As clsTabularModel.Dimension In Me.Dimensions
+                For Each l As clsTabularModel.Level In d.LevelsAttrVisible
+                    If l.UniName.ToLower.Trim = strUniName.ToLower.Trim Then
+                        l.IsSelected = True
+                        'nd = l.nds.Item(0)
+                        If l.LevelSiblings.Count > 0 Then
+                            For Each ls As clsTabularModel.Level In l.LevelSiblings
+                                ls.IsSelected = True
+                            Next ls
+                        End If
+                        Exit For
+                    End If
+                Next l
+            Next d
+
+
+        End Sub
+
+
 
 
         Public Sub DeSelect(strUniName As String)
@@ -1831,12 +1950,17 @@ Public Class clsTabularModel
         dt.Dispose()
 
         'rec.open("SELECT * FROM SYSTEMRESTRICTSCHEMA ($SYSTEM.DISCOVER_CSDL_METADATA, [CATALOG_NAME] = '" & strDB & "',[VERSION] = '4.0') ", Me.conn, 0)
-        rec.open("SELECT * FROM SYSTEMRESTRICTSCHEMA ($SYSTEM.DISCOVER_CSDL_METADATA, [CATALOG_NAME] = '" & strDB & "') ", Me.conn, 0)
-        dt = getDatatable(rec)
-        dt.TableName = "CSDL_METADATA"
-        rec.close
-        dsRes.Tables.Add(dt.Copy)
-        dt.Dispose()
+        'This query can result in an error
+        Try
+            rec.open("SELECT * FROM SYSTEMRESTRICTSCHEMA ($SYSTEM.DISCOVER_CSDL_METADATA, [CATALOG_NAME] = '" & strDB & "') ", Me.conn, 0)
+            dt = getDatatable(rec)
+            dt.TableName = "CSDL_METADATA"
+            rec.close
+            dsRes.Tables.Add(dt.Copy)
+            dt.Dispose()
+        Catch ex As Exception
+        End Try
+
 
 
 
@@ -1901,6 +2025,9 @@ Public Class clsTabularModel
         Return path
     End Function
 
+
+
+
     Public Function GetFormat(qc As clsQueryColumn) As String
 
         If Not Me.ds Is Nothing Then
@@ -1910,6 +2037,9 @@ Public Class clsTabularModel
                 xmlString = xmlString.Substring(xmlString.IndexOf("<EntityType Name=""" & qc.EntityName & """>"))
                 xmlString = xmlString.Substring(0, xmlString.IndexOf("</EntityType>"))
                 If qc.FieldType = clsQueryColumn.enFieldType.Level Then
+                    If qc.DataType = clsQueryColumn.enDataType.Bool Then
+                        Return ""
+                    End If
                     xmlString = xmlString.Substring(xmlString.IndexOf("<Property Name=""" & qc.ReferenceName & ""))
                     xmlString = xmlString.Substring(0, xmlString.IndexOf("</Property>"))
                     If xmlString.Contains("FormatString=") Then
@@ -1918,6 +2048,9 @@ Public Class clsTabularModel
                         Return xmlString
                     End If
                 ElseIf qc.FieldType = clsQueryColumn.enFieldType.Measure Then
+                    If qc.DataType = clsQueryColumn.enDataType.Bool Then
+                        Return ""
+                    End If
                     xmlString = xmlString.Substring(xmlString.IndexOf("ReferenceName=""" & qc.ReferenceName & ""))
                     xmlString = xmlString.Substring(0, xmlString.IndexOf("</Property>"))
                     If xmlString.Contains("FormatString=") Then
@@ -1930,7 +2063,9 @@ Public Class clsTabularModel
                 Return ""
             End Try
         End If
+
         Return ""
+
     End Function
 
 #End Region
