@@ -2,20 +2,24 @@
 
 
     Private pnlMain As System.Windows.Forms.Panel
-    Private btnCancel As System.Windows.Forms.Button
-    Private btnOK As System.Windows.Forms.Button
+    Friend btnCancel As System.Windows.Forms.Button
+    Friend btnOK As System.Windows.Forms.Button
     Private ctrlDaxQuery As ctrlDaxQuery
 
     Public Sub CancelQuery()
         If Not Me.ctrlDaxQuery.ctsSource Is Nothing Then
             Try
                 Me.ctrlDaxQuery.ctsSource.Cancel()
+                Me.ctrlDaxQuery.conn.Dispose
+                Me.ctrlDaxQuery.conn = Nothing
             Catch ex As Exception
             End Try
         End If
         If Not Me.ctrlDaxQuery.ctsCubeSource Is Nothing Then
             Try
                 Me.ctrlDaxQuery.ctsCubeSource.Cancel()
+                Me.ctrlDaxQuery.conn.Dispose
+                Me.ctrlDaxQuery.conn = Nothing
             Catch ex As Exception
             End Try
         End If
@@ -88,7 +92,10 @@
 
         Me.StartPosition = FormStartPosition.CenterScreen
 
-        Me.ctrlDaxQuery = New ctrlDaxQuery(Me.ConnName, Me.QueryName, strConn, CubeName, q, True, True)
+
+
+        Me.ctrlDaxQuery = New ctrlDaxQuery(Me.ConnName, Me.QueryName, strConn, CubeName, q, True, True, Me.btnOK)
+
 
         Me.ctrlDaxQuery.Dock = DockStyle.Fill
         Me.pnlMain.Controls.Add(Me.ctrlDaxQuery)
