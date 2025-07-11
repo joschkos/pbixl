@@ -17,7 +17,7 @@ Public Class ctrlDaxQuery
 
     Friend Property ShowData As Boolean
 
-
+    Friend Property btnOK As System.Windows.Forms.Button
 
 
 
@@ -79,7 +79,7 @@ Public Class ctrlDaxQuery
             Else
                 If Not Me._ctrFilter Is Nothing Then
                     Me._ctrFilter.Visible = False
-                    Me._ctrFilter.Dispose()
+                    'Me._ctrFilter.Dispose()
                 End If
             End If
             _ctrFilter = value
@@ -125,11 +125,11 @@ Public Class ctrlDaxQuery
     End Property
 
 
-    Public Sub New(ConnName As String, QueryName As String, ConnectionString As String, CubeName As String, query As clsQuery, Async As Boolean, ShowData As Boolean)
+    Public Sub New(ConnName As String, QueryName As String, ConnectionString As String, CubeName As String, query As clsQuery, Async As Boolean, ShowData As Boolean, btnOK As Windows.Forms.Button)
 
         InitializeComponent()
 
-
+        Me.btnOK = btnOK
 
         Me.ConnName = ConnName
         Me.QueryName = QueryName
@@ -148,7 +148,7 @@ Public Class ctrlDaxQuery
 
         Me.split.FixedPanel = FixedPanel.Panel1
 
-        Me.ctrlCube = New ctrlCube(Me)
+        Me.ctrlCube = New ctrlCube(Me, Me.btnOK)
         Me.ctrlCube.Dock = DockStyle.Fill
         Me.split.Panel1.Controls.Add(Me.ctrlCube)
         Me.ctrlCube.ctrlState = ctrlCube.enctrlState.loading
@@ -157,7 +157,6 @@ Public Class ctrlDaxQuery
         Me.ctrlTable.Dock = DockStyle.Fill
         Me.split.Panel2.Controls.Add(Me.ctrlTable)
         Me.ctrlTable.ctrlState = ctrlTable.enctrlState.init
-
 
 
         Me.Init()
@@ -183,10 +182,7 @@ Public Class ctrlDaxQuery
             Me.query.CubeName = Me.CubeName
         End If
 
-
         Me.UpdateQueryColumns()
-
-
 
         If Me.query.QueryColumns.Count = 0 Then
             If Not Me.ctsSource Is Nothing Then
@@ -292,103 +288,73 @@ Public Class ctrlDaxQuery
                                                              If blnCancelled = True Then Return Nothing
                                                              Me.ctrlTable.ctrlState = ctrlTable.enctrlState.loading
 
-                                                             Dim q As clsQuery = Me.query.Clone
-                                                             Me.query = Nothing
-                                                             Me.query = New clsQuery()
-                                                             With Me.query
-                                                                 .GUID = q.GUID
-                                                                 .FilterControlVisible = False
-                                                                 .FilterControlGUID = ""
-                                                                 .ConnectionString = q.ConnectionString
-                                                                 .ConnectionName = q.ConnectionName
-                                                                 .Command = q.Command
-                                                                 .AddMissingItems = q.AddMissingItems
-                                                                 .CubeName = q.CubeName
-                                                                 .SelectionMode = q.SelectionMode
-                                                             End With
-                                                             If blnCancelled = True Then Return Nothing
+
+
+
 
                                                              Dim strErrMsg As String = ""
                                                              Dim intErrCtr As Integer = 0
+                                                             For i As Integer = Me.query.QueryColumns.Count - 1 To 0 Step -1
 
-                                                             For Each qc As clsQueryColumn In q.AllQueryColumnsSortedByOrdinal
-
-                                                                 Dim _qc As New clsQueryColumn
-                                                                 With _qc
-                                                                     .BlankSel = qc.BlankSel
-                                                                     .DataType = qc.DataType
-                                                                     .DaxFilter = qc.DaxFilter
-                                                                     .DaxStmnt = qc.DaxStmnt
-                                                                     .FieldName = qc.FieldName
-                                                                     .FieldType = qc.FieldType
-                                                                     .FilterControlGUID = ""
-                                                                     .GUID = qc.GUID
-                                                                     If Not qc.htSel Is Nothing Then
-                                                                         .htSel = qc.htSel.Clone
-                                                                     End If
-                                                                     .Ordinal = qc.Ordinal
-                                                                     .Query = q
-                                                                     .SearchTerm = qc.SearchTerm
-                                                                     If Not qc.SelectedMember Is Nothing AndAlso qc.SelectedMember.Count > 0 Then
-                                                                         .SelectedMember.AddRange(qc.SelectedMember)
-                                                                     End If
-                                                                     .SelectionMode = qc.SelectionMode
-                                                                     .Sort = qc.Sort
-                                                                     .TableName = qc.TableName
-                                                                     .UniName = qc.UniName
-                                                                     .IsSelected = True
-                                                                 End With
-
-                                                                 If blnCancelled = True Then Return Nothing
-
-
-                                                                 If _qc.FieldType = clsQueryColumn.enFieldType.Level Then
-                                                                     Dim l As clsTabularModel.Level = Me.tm.GetLevel(_qc.UniName)
-                                                                     If Not l Is Nothing AndAlso l.DataType = qc.DataType Then
-                                                                         l.IsSelected = True
-                                                                         Me.query.QueryColumns.Add(_qc)
-                                                                     Else
+                                                                 If Me.query.QueryColumns.Item(i).FieldType = clsQueryColumn.enFieldType.Level Then
+                                                                     Dim l As clsTabularModel.Level = Me.tm.GetLevel(Me.query.QueryColumns.Item(i).UniName)
+                                                                     If l Is Nothing Then
                                                                          intErrCtr += 1
-                                                                         If l Is Nothing Then
-                                                                             If intErrCtr <= 5 Then
-                                                                                 strErrMsg += "Column " & qc.UniName & " removed from query because it is missing from model." & vbCrLf & vbCrLf
-                                                                             End If
+                                                                         strErrMsg += "Column " & Me.query.QueryColumns.Item(i).UniName & " removed from query because it is missing from model." & vbCrLf & vbCrLf
+                                                                         Me.query.QueryColumns.RemoveAt(i)
+                                                                     Else
+                                                                         If l.DataType <> Me.query.QueryColumns.Item(i).DataType Then
+                                                                             intErrCtr += 1
+                                                                             strErrMsg += "Column " & Me.query.QueryColumns.Item(i).UniName & " removed from query because due to data type mismatch." & vbCrLf & vbCrLf
+                                                                             Me.query.QueryColumns.RemoveAt(i)
                                                                          Else
-                                                                             If intErrCtr <= 5 Then
-                                                                                 strErrMsg += "Column " & qc.UniName & " removed from query because due to data type mismatch." & vbCrLf & vbCrLf
-                                                                             End If
+                                                                             l.IsSelected = True
                                                                          End If
                                                                      End If
-                                                                 Else
-                                                                     Dim m As clsTabularModel.Measure = Me.tm.GetMeasure(_qc.UniName)
-                                                                     If Not m Is Nothing AndAlso m.DataType = qc.DataType Then
-                                                                         m.IsSelected = True
-                                                                         Me.query.QueryColumns.Add(_qc)
-                                                                     Else
-                                                                         intErrCtr += 1
-                                                                         If m Is Nothing Then
-                                                                             If intErrCtr <= 5 Then
-                                                                                 strErrMsg += "Column " & qc.UniName & " removed from query because it is missing from model." & vbCrLf & vbCrLf
-                                                                             End If
-                                                                         Else
-                                                                             If intErrCtr <= 5 Then
-                                                                                 strErrMsg += "Column " & qc.UniName & " removed from query because due to data type mismatch." & vbCrLf & vbCrLf
-                                                                             End If
-                                                                         End If
-                                                                     End If
-
                                                                  End If
-                                                             Next qc
+
+                                                                 If Me.query.QueryColumns.Item(i).FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                                                                     Dim l As clsTabularModel.Level = Me.tm.GetLevel(Me.query.QueryColumns.Item(i).UniName)
+                                                                     If l Is Nothing Then
+                                                                         intErrCtr += 1
+                                                                         strErrMsg += "Implicit Measure " & Me.query.QueryColumns.Item(i).iFuncAlias & " removed from query because it is missing from model." & vbCrLf & vbCrLf
+                                                                         Me.query.QueryColumns.RemoveAt(i)
+                                                                     Else
+                                                                         If l.DataType <> Me.query.QueryColumns.Item(i).DataType Then
+                                                                             intErrCtr += 1
+                                                                             strErrMsg += "Implicit Measure " & Me.query.QueryColumns.Item(i).iFuncAlias & " removed from query because due to data type mismatch." & vbCrLf & vbCrLf
+                                                                             Me.query.QueryColumns.RemoveAt(i)
+                                                                         Else
+                                                                             'l.IsSelected = False
+                                                                         End If
+                                                                     End If
+                                                                 End If
+
+                                                                 If Me.query.QueryColumns.Item(i).FieldType = clsQueryColumn.enFieldType.Measure Then
+                                                                     Dim m As clsTabularModel.Measure = Me.tm.GetMeasure(Me.query.QueryColumns.Item(i).UniName)
+                                                                     If m Is Nothing Then
+                                                                         intErrCtr += 1
+                                                                         strErrMsg += "Measure " & Me.query.QueryColumns.Item(i).UniName & " removed from query because it is missing from model." & vbCrLf & vbCrLf
+                                                                         Me.query.QueryColumns.RemoveAt(i)
+                                                                     Else
+                                                                         If m.DataType <> Me.query.QueryColumns.Item(i).DataType Then
+                                                                             intErrCtr += 1
+                                                                             strErrMsg += "Measure " & Me.query.QueryColumns.Item(i).UniName & " removed from query because due to data type mismatch." & vbCrLf & vbCrLf
+                                                                             Me.query.QueryColumns.RemoveAt(i)
+                                                                         Else
+                                                                             m.IsSelected = True
+                                                                         End If
+                                                                     End If
+                                                                 End If
+
+
+                                                             Next i
+
 
                                                              If strErrMsg <> "" Then
-                                                                 If intErrCtr > 5 Then
-                                                                     strErrMsg = strErrMsg & (intErrCtr - 5).ToString & " more columns removed."
-                                                                 End If
                                                                  MsgBox(strErrMsg, vbCritical)
                                                              End If
 
-
-                                                             If blnCancelled = True Then Return Nothing
 
                                                              'Set Display state
                                                              For i = Me.ctrlCube.fg.Rows.Count - 1 To 1 Step -1
@@ -401,18 +367,15 @@ Public Class ctrlDaxQuery
                                                                  End If
                                                              Next i
 
-
-                                                             'MsgBox("removed columns")
-
-
-
                                                              If blnCancelled = True Then Return Nothing
                                                              Me.RefreshPreview()
+
+
 
                                                          End If
 
 
-                                                         Return Nothing
+                                                                 Return Nothing
                                                      Catch ex As Exception
                                                          Me.ctrlCube.Err = ex
                                                          Me.ctrlCube.ctrlState = ctrlCube.enctrlState.exception
@@ -436,45 +399,69 @@ Public Class ctrlDaxQuery
     End Sub
 
     Private Sub UpdateQueryColumns()
-        Dim lstF As List(Of Object) = Me.tm.GetAllObjectFields(Me.tm.Cubes(0))
-        Dim ctr As Integer = 0
 
-        Dim htKeys As New Hashtable
+
+
+        Dim lstF As List(Of Object) = Me.tm.GetAllSelectedObjectFields(Me.tm.Cubes(0))
+
+        'Add Fields
         For Each f In lstF
-            If htKeys.ContainsKey(f.UniName.ToString.ToLower) = False Then
-                htKeys.Add(f.UniName.ToString.ToLower, Nothing)
-                If f.IsSelected = True Then
-
-                    If Me.query.ColumnIsInQuery(f.UniName) = False Then
-                        Dim qc As New clsQueryColumn(Me.query, f.UniName, f.TableName, f.FieldName)
-                        With qc
-                            .Ordinal = 99
-                            .IsSelected = True
-                            .SelectionMode = f.SelectionMode
-                            .DaxFilter = f.DaxFilter
-                            .SearchTerm = f.SearchTerm
-                            If Not f.htSel Is Nothing Then
-                                .htSel = f.htSel.Clone
-                            End If
-                            .FilterControlGUID = f.FilterControlGUID
-                            .DataType = f.DataType
-                            .FieldType = f.FieldType
-                            .TableName = f.TableName
-                            .FieldName = f.FieldName
-                            .UniName = f.UniName
-                            .Sort = f.Sort
-                        End With
-                        Me.query.AddColumn(qc, 99999)
-
-                    End If
-                Else
-                    If Me.query.ColumnIsInQuery(f.UniName) = True Then
-                        Me.query.RemoveColumn(f.uniname)
-                    End If
+            Dim blnFound = False
+            For Each qc In Me.query.QueryColumns
+                If qc.UniName.ToLower.Trim = f.UniName.ToString.ToLower.Trim AndAlso qc.FieldType <> clsQueryColumn.enFieldType.ImpMeasure Then
+                    blnFound = True
+                    Exit For
                 End If
+            Next qc
+            If blnFound = False Then
+                Dim qc As New clsQueryColumn(Me.query, f.UniName, f.TableName, f.FieldName)
+                With qc
+                    .Ordinal = 99
+                    .IsSelected = True
+                    .SelectionMode = f.SelectionMode
+                    .DaxFilter = f.DaxFilter
+                    .SearchTerm = f.SearchTerm
+                    If Not f.htSel Is Nothing Then
+                        .htSel = f.htSel.Clone
+                    End If
+                    .FilterControlGUID = f.FilterControlGUID
+                    .DataType = f.DataType
+                    .FieldType = f.FieldType
+                    .TableName = f.TableName
+                    .FieldName = f.FieldName
+                    .UniName = f.UniName
+                    .Sort = f.Sort
+                End With
+
+                Me.query.AddColumn(qc, 99999)
 
             End If
         Next f
+
+
+
+
+        'Remove Fields
+        For i As Integer = Me.query.QueryColumns.Count - 1 To 0 Step -1
+            Dim blnFound As Boolean = False
+            For Each f In lstF
+                If f.UniName.ToString.ToLower = Me.query.QueryColumns.Item(i).UniName.ToLower Then
+                    blnFound = True
+                    Exit For
+                End If
+            Next f
+            If blnFound = False AndAlso Me.query.QueryColumns.Item(i).FieldType <> clsQueryColumn.enFieldType.ImpMeasure Then
+                Me.query.QueryColumns.RemoveAt(i)
+            End If
+        Next i
+
+        For i As Integer = Me.query.QueryColumns.Count - 1 To 0 Step -1
+            Me.query.QueryColumns.Item(i).Query = Me.query
+        Next i
+
+
+
+
     End Sub
 
 End Class

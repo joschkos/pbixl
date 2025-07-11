@@ -14,6 +14,8 @@ Public Class clsQuery
 
     Public Property CubeName As String
 
+    Public Property Version As String
+
 
     Public ReadOnly Property FilterExpressions As List(Of String)
         Get
@@ -89,6 +91,20 @@ Public Class clsQuery
 
     Public Property GUID As String
     Public Property QueryColumns As List(Of clsQueryColumn)
+
+    Public ReadOnly Property QueryColumnByGUID(GUID As String) As clsQueryColumn
+        Get
+            For Each qc In Me.QueryColumns
+                If qc.GUID.ToLower = GUID.ToLower Then
+                    Return qc
+                End If
+            Next qc
+            Return Nothing
+        End Get
+    End Property
+
+
+
 
     Public Property ConnectionName As String
     Public Property ConnectionString As String
@@ -223,6 +239,7 @@ Public Class clsQuery
                     .DaxStmnt = qc.DaxStmnt
                     .FieldName = qc.FieldName
                     .FieldType = qc.FieldType
+                    .iFunction = qc.iFunction
                     .FilterControlGUID = ""
                     .GUID = qc.GUID
                     .Ordinal = qc.Ordinal
@@ -1364,9 +1381,15 @@ Public Class clsQuery
                 Next c
                 For Each c As clsQueryColumn In Me.QueryColumns
                     If c.FieldType = clsQueryColumn.enFieldType.Measure Then
-                        strD = strD & """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                        strD = strD & """" & c.TableName & " " & c.FieldName & """," & c.UniName & "," & vbCrLf
                     End If
                 Next c
+                For Each c As clsQueryColumn In Me.QueryColumns
+                    If c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD = strD & """" & c.iFuncAlias & """," & c.iFuncForm & "," & vbCrLf
+                    End If
+                Next c
+
                 strD = strD.Substring(0, strD.Length - 3)
                 strD += vbCrLf & ")" & vbCrLf
 
@@ -1374,22 +1397,34 @@ Public Class clsQuery
                 For Each c As clsQueryColumn In Me.AllQueryColumnsSortedByOrdinal 'In Me.QueryColumns
                     If c.FieldType = clsQueryColumn.enFieldType.Level Then
                         strD += """" & c.UniName & """," & c.UniName & "," & vbCrLf
-                    Else
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.Measure Then
                         strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += """" & c.iFuncAlias & """,[" & c.iFuncAlias & "]," & vbCrLf
                     End If
                 Next c
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
 
+
                 If Not Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
-                    strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0)" & vbCrLf
-                    strD += "EVALUATE" & vbCrLf & " x1"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0,[" & Me.OrderColumn.iFuncAlias & "]," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 ElseIf Not Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
+
                 End If
 
                 Return strD
@@ -1419,7 +1454,12 @@ Public Class clsQuery
                 Next i
                 For Each c As clsQueryColumn In Me.QueryColumns
                     If c.FieldType = clsQueryColumn.enFieldType.Measure Then
-                        strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                        strD += """" & c.TableName & " " & c.FieldName & """," & c.UniName & "," & vbCrLf
+                    End If
+                Next c
+                For Each c As clsQueryColumn In Me.QueryColumns
+                    If c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD = strD & """" & c.iFuncAlias & """," & c.iFuncForm & "," & vbCrLf
                     End If
                 Next c
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
@@ -1428,22 +1468,34 @@ Public Class clsQuery
                 For Each c As clsQueryColumn In Me.AllQueryColumnsSortedByOrdinal
                     If c.FieldType = clsQueryColumn.enFieldType.Level Then
                         strD += """" & c.UniName & """," & c.UniName & "," & vbCrLf
-                    Else
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.Measure Then
                         strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += """" & c.iFuncAlias & """,[" & c.iFuncAlias & "]," & vbCrLf
                     End If
                 Next c
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
 
+
                 If Not Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
-                    strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0)" & vbCrLf
-                    strD += "EVALUATE " & vbCrLf & "x1"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0,[" & Me.OrderColumn.iFuncAlias & "]," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 ElseIf Not Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
+
                 End If
 
                 Return strD
@@ -1473,16 +1525,26 @@ Public Class clsQuery
                 Next i
                 For Each c As clsQueryColumn In Me.QueryColumns
                     If c.FieldType = clsQueryColumn.enFieldType.Measure Then
-                        strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                        strD += """" & c.TableName & " " & c.FieldName & """," & c.UniName & "," & vbCrLf
                     End If
                 Next c
+                For Each c As clsQueryColumn In Me.QueryColumns
+                    If c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD = strD & """" & c.iFuncAlias & """," & c.iFuncForm & "," & vbCrLf
+                    End If
+                Next c
+
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
 
                 strD += "VAR m0 = " & vbCrLf & "FILTER(x0,"
                 For Each c As clsQueryColumn In Me.QueryColumns
-                    If c.FieldType = clsQueryColumn.enFieldType.Measure Then
+                    If c.FieldType = clsQueryColumn.enFieldType.Measure Or c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
                         If c.DaxFilter <> "" Then
-                            strD += c.DaxFilter & " && "
+                            If c.FieldType = clsQueryColumn.enFieldType.Measure Then
+                                strD += c.DaxFilter & " && "
+                            Else
+                                strD += c.DaxFilter.Replace(c.UniName, "[" & c.iFuncAlias & "]") & " && "
+                            End If
                         End If
                     End If
                 Next c
@@ -1492,23 +1554,32 @@ Public Class clsQuery
                 For Each c As clsQueryColumn In Me.AllQueryColumnsSortedByOrdinal
                     If c.FieldType = clsQueryColumn.enFieldType.Level Then
                         strD += """" & c.UniName & """," & c.UniName & "," & vbCrLf
-                    Else
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.Measure Then
                         strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += """" & c.iFuncAlias & """,[" & c.iFuncAlias & "]," & vbCrLf
                     End If
-
                 Next c
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
 
                 If Not Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
-                    strD += "EVALUATE " & vbCrLf & "x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0)" & vbCrLf
-                    strD += "EVALUATE " & vbCrLf & "x1"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0,[" & Me.OrderColumn.iFuncAlias & "]," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 ElseIf Not Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 End If
 
                 Return strD
@@ -1527,17 +1598,29 @@ Public Class clsQuery
                 Next c
                 For Each c As clsQueryColumn In Me.QueryColumns
                     If c.FieldType = clsQueryColumn.enFieldType.Measure Then
-                        strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                        strD += """" & c.TableName & " " & c.FieldName & """," & c.UniName & "," & vbCrLf
                     End If
                 Next c
+                For Each c As clsQueryColumn In Me.QueryColumns
+                    If c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD = strD & """" & c.iFuncAlias & """," & c.iFuncForm & "," & vbCrLf
+                    End If
+                Next c
+
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")"
                 strD += vbCrLf
 
                 strD += "VAR m0 = " & vbCrLf & "FILTER(x0,"
                 For Each c As clsQueryColumn In Me.QueryColumns
-                    If c.FieldType = clsQueryColumn.enFieldType.Measure Then
+                    If c.FieldType = clsQueryColumn.enFieldType.Measure Or c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
                         If c.DaxFilter <> "" Then
-                            strD += c.DaxFilter & " && "
+                            If c.FieldType = clsQueryColumn.enFieldType.Measure Then
+                                strD += c.DaxFilter & " && "
+                            ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                                strD += c.DaxFilter.Replace(c.UniName, "[" & c.iFuncAlias & "]") & " && "
+                            End If
+
+
                         End If
                     End If
                 Next c
@@ -1547,22 +1630,32 @@ Public Class clsQuery
                 For Each c As clsQueryColumn In Me.AllQueryColumnsSortedByOrdinal
                     If c.FieldType = clsQueryColumn.enFieldType.Level Then
                         strD += """" & c.UniName & """," & c.UniName & "," & vbCrLf
-                    Else
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.Measure Then
                         strD += """" & c.FieldName & """," & c.UniName & "," & vbCrLf
+                    ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += """" & c.iFuncAlias & """,[" & c.iFuncAlias & "]," & vbCrLf
                     End If
                 Next c
                 strD = strD.Substring(0, strD.Length - 3) & vbCrLf & ")" & vbCrLf
 
                 If Not Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
-                    strD += "EVALUATE " & vbCrLf & "x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = True Then
-                    strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0)" & vbCrLf
-                    strD += "EVALUATE " & vbCrLf & "x1"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0,[" & Me.OrderColumn.iFuncAlias & "]," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "VAR x1 = " & vbCrLf & "TOPN(1000,s0," & Me.OrderColumn.UniName & "," & Me.OrderColumn.Sort.ToString & ")" & vbCrLf
+                        strD += "EVALUATE x1 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 ElseIf Not Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
-                ElseIf Me.OrderColumn Is Nothing And blnPreview = False Then
-                    strD += "EVALUATE " & vbCrLf & "s0"
+
+                    If Me.OrderColumn.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY [" & Me.OrderColumn.iFuncAlias & "] " & Me.OrderColumn.Sort.ToString.ToUpper
+                    Else
+                        strD += "EVALUATE " & vbCrLf & "s0 " & vbCrLf & "ORDER BY " & Me.OrderColumn.UniName & " " & Me.OrderColumn.Sort.ToString.ToUpper
+                    End If
+
                 End If
 
                 Return strD
@@ -1897,7 +1990,10 @@ Public Class clsQuery
     Public ReadOnly Property MeasureFilter As Boolean
         Get
             For Each c As clsQueryColumn In Me.QueryColumns
-                If c.FieldType = clsQueryColumn.enFieldType.Measure Then
+                If c.FieldType = clsQueryColumn.enFieldType.Measure Or c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                    If c.DaxFilter Is Nothing Then
+                        Return False
+                    End If
                     If c.DaxFilter.Trim <> "" Then
                         Return True
                     End If
@@ -1918,12 +2014,18 @@ Public Class clsQuery
                     If c.Sort <> clsQueryColumn.enSort.none Then
                         Return c
                     End If
+                ElseIf c.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+                    If c.Sort <> clsQueryColumn.enSort.none Then
+                        Return c
+                    End If
                 End If
             Next c
 
             For Each qc In Me.AllQueryColumnsSortedByOrdinal
+
                 qc.Sort = clsQueryColumn.enSort.asc
                 Return qc
+
             Next qc
 
 
@@ -1963,10 +2065,9 @@ Public Class clsQuery
 
 
 
-
-
-
     Public Sub New()
+
+        Me.Version = "0.1"
 
         Me.FilterControlVisible = False
         Me.FilterControlGUID = ""
@@ -1990,7 +2091,7 @@ Public Class clsQuery
 
     Public Function ColumnIsInQuery(UniName As String) As Boolean
         For Each c As clsQueryColumn In Me.QueryColumns
-            If c.UniName.ToLower = UniName.ToLower AndAlso c.IsSelected = True Then
+            If c.UniName.ToLower = UniName.ToLower Then
                 Return True
             End If
         Next c
@@ -2035,6 +2136,7 @@ Public Class clsQueryColumn
     Enum enFieldType
         Level = 1
         Measure = 2
+        ImpMeasure = 3
     End Enum
 
     Enum enDataType
@@ -2057,8 +2159,58 @@ Public Class clsQueryColumn
         desc = 2
     End Enum
 
+    Public Enum enFunction
+        none = 0
+        sum = 1
+        avg = 2
+        min = 3
+        max = 4
+        distinctCount = 5
+        count = 6
+        stdev = 7
+        variance = 8
+        median = 9
+    End Enum
+
+    Public ReadOnly Property isImplicitCast As Boolean
+        Get
+            If Me.FieldType = clsQueryColumn.enFieldType.ImpMeasure Then
+
+                If Me.DataType = clsQueryColumn.enDataType.Text Then
+                    If Me.iFunction = clsQueryColumn.enFunction.count Or Me.iFunction = clsQueryColumn.enFunction.distinctCount Then
+                        Return True
+                    End If
+                End If
+
+                If Me.DataType = clsQueryColumn.enDataType.Bool Then
+                    If Me.iFunction = clsQueryColumn.enFunction.distinctCount Then
+                        Return True
+                    End If
+                End If
+
+                If Me.DataType = clsQueryColumn.enDataType.DateTime Then
+                    If Me.iFunction = clsQueryColumn.enFunction.sum OrElse Me.iFunction = clsQueryColumn.enFunction.count _
+                        OrElse Me.iFunction = clsQueryColumn.enFunction.distinctCount OrElse Me.iFunction = clsQueryColumn.enFunction.stdev _
+                        OrElse Me.iFunction = clsQueryColumn.enFunction.variance Then
+                        Return True
+                    End If
+                End If
+
+                If Me.DataType = clsQueryColumn.enDataType.Number Then
+                    Return True
+                End If
+
+            End If
+            Return False
+        End Get
+    End Property
+
     Public Property GUID As String
+
+
     Public Property UniName As String
+
+
 
     Public ReadOnly Property EntityName As String
         Get
@@ -2100,6 +2252,56 @@ Public Class clsQueryColumn
     End Property
 
 
+    Private Property _iFunction As enFunction
+    Public Property iFunction As enFunction
+        Get
+            If Me.FieldType = enFieldType.ImpMeasure Then
+                Return _iFunction
+            Else
+                Return enFunction.none
+            End If
+        End Get
+        Set(value As enFunction)
+            If Me.FieldType = enFieldType.ImpMeasure Then
+                Me._iFunction = value
+            Else
+                Me._iFunction = enFunction.none
+            End If
+
+        End Set
+    End Property
+
+    Public ReadOnly Property iFuncForm As String
+        Get
+            Select Case Me.iFunction
+                Case enFunction.sum
+                    Return "CALCULATE(SUM(" & Me.UniName & "))"
+                Case enFunction.avg
+                    Return "CALCULATE(AVERAGE(" & Me.UniName & "))"
+                Case enFunction.min
+                    Return "CALCULATE(MIN(" & Me.UniName & "))"
+                Case enFunction.max
+                    Return "CALCULATE(MAX(" & Me.UniName & "))"
+                Case enFunction.distinctCount
+                    Return "CALCULATE(DISTINCTCOUNT(" & Me.UniName & "))"
+                Case enFunction.count
+                    Return "CALCULATE(COUNT(" & Me.UniName & "))"
+                Case enFunction.stdev
+                    Return "CALCULATE(STDEV.P(" & Me.UniName & "))"
+                Case enFunction.variance
+                    Return "CALCULATE(VAR.P(" & Me.UniName & "))"
+                Case enFunction.median
+                    Return "CALCULATE(MEDIAN(" & Me.UniName & "))"
+            End Select
+            Return ""
+        End Get
+    End Property
+
+    Public ReadOnly Property iFuncAlias As String
+        Get
+            Return Me.iFunction.ToString & "_" & Me.TableName & "_" & Me.FieldName
+        End Get
+    End Property
 
 
 
@@ -2155,6 +2357,8 @@ Public Class clsQueryColumn
     Private _DaxFilter As String
     Public Property DaxFilter As String
         Get
+
+
             If Me.SelectionMode = enSelectionMode.AllSearch Then
                 Return Me._DaxFilter
             ElseIf Me.SelectionMode = enSelectionMode.SelectMember OrElse Me.SelectionMode = enSelectionMode.DeSelectMember Then
@@ -2290,8 +2494,6 @@ Public Class clsQueryColumn
     End Sub
 
     Public Sub New(Query As clsQuery, UniName As String, TableName As String, FieldName As String)
-
-
 
 
         Me.Query = Query
