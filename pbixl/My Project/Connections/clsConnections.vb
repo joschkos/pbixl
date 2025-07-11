@@ -5,6 +5,21 @@ Public Class clsConnections
     Public Connections As List(Of clsConnection)
     Private wb As Excel.Workbook
 
+    Public ReadOnly Property PBIConnections As List(Of clsConnection)
+        Get
+            Dim lstRes As New List(Of clsConnection)
+            For Each c As clsConnections.clsConnection In Me.Connections
+                If c.ConnType = clsConnection.enConnType.PBIDesktop Then
+                    lstRes.Add(c)
+                End If
+            Next c
+            Return lstRes
+
+        End Get
+    End Property
+
+
+
     Public Sub New(wb As Excel.Workbook)
         Me.wb = wb
         Me.Connections = New List(Of clsConnection)
@@ -13,11 +28,12 @@ Public Class clsConnections
     Public Sub Refresh()
 
         Dim lstGuids As New List(Of String)
-        Dim qm As New clsQryMgr(Me.wb)
-        For Each q As clsQuery In qm.Queries
+        'Dim qm As New clsQryMgr(Me.wb)
+        'For Each q As clsQuery In qm.WorkbookQueries
+        For Each q As clsQuery In MyAddin.QryMgr.WorkbookQueries(Me.wb) '  qm.WorkbookQueries
             lstGuids.Add(q.GUID.Substring(0, 8))
         Next q
-        qm = Nothing
+        'qm = Nothing
 
 
         For Each wc As Excel.WorkbookConnection In Me.wb.Connections
@@ -33,31 +49,58 @@ Public Class clsConnections
                 Next s
 
 
-                If blnFound = False Then
+                If blnFound = False AndAlso wc.Description.ToLower.Contains("pbixl") = False Then
                     Me.Connections.Add(c)
                 End If
 
             End If
         Next wc
 
+
         Dim lstPorts As New List(Of String)
-        Try
-            Dim tcps() As MIB_TCPROW_OWNER_PID = TCPConns()
-            For Each proc As System.Diagnostics.Process In System.Diagnostics.Process.GetProcessesByName("msmdsrv")
-                If proc.SessionId > 0 Then
-                    Dim intProcID As Integer = proc.Id
-                    For Each row As MIB_TCPROW_OWNER_PID In tcps
-                        If row.PID = intProcID Then
-                            Dim tcp As TcpConnection = MIB_ROW_To_TCP(row)
-                            Dim strPort As String = tcp.localPort.ToString
-                            lstPorts.Add(strPort)
+        Dim objWMI As Object
+        Dim objProcess As Object
+        Dim strProcessName As String
+        Dim strCmd As String = ""
+        Dim strPort As String = ""
+        Dim strCube As String = ""
+        strProcessName = "msmdsrv.exe"
+        objWMI = GetObject("winmgmts:\\.\root\cimv2")
+        For Each objProcess In objWMI.ExecQuery("SELECT * FROM Win32_Process WHERE Name='" & strProcessName & "'")
+            strCmd = objProcess.CommandLine.ToString
+            If strCmd <> "" Then
+                For i = Len(strCmd) - 1 To 0 Step -1
+                    If Mid(strCmd, i, 1) = """" Then
+                        strCmd = strCmd.Substring(i).Replace("""", "")
+                        If System.IO.File.Exists(strCmd & "\msmdsrv.port.txt") Then
+                            strPort = My.Computer.FileSystem.ReadAllText(strCmd & "\msmdsrv.port.txt", System.Text.Encoding.Unicode).ToString
+                            Dim conn As Object = CreateObject("ADODB.CONNECTION")
+                            conn.connectionstring = "Provider=MSOLAP;Data Source=localhost:" & strPort
+                            conn.open
+                            Dim rec As Object = CreateObject("ADODB.RECORDSET")
+                            rec.open("Select * from $system.MDSCHEMA_CUBES", conn)
+                            strCube = ""
+                            Do While rec.eof = False
+                                If rec.Fields("BASE_CUBE_NAME").Value.ToString.Trim = "" Then
+                                    strCube = rec.fields("CUBE_NAME").Value.ToString
+                                End If
+                                rec.movenext
+                            Loop
+                            rec.close
+                            conn.close
+
+                            If strCube.Trim <> "" Then
+                                lstPorts.Add(strPort)
+                            End If
+
+
+
                         End If
-                    Next row
-                End If
-            Next proc
-            tcps = Nothing
-        Catch ex As Exception
-        End Try
+                        Exit For
+                    End If
+                Next i
+            End If
+        Next objProcess
 
 
         For Each p In lstPorts
@@ -76,16 +119,35 @@ Public Class clsConnections
         Public Property CubeName As String
         Public Property LastSchemaUpdate As DateTime
         Public Property LastDataUpdate As DateTime
+
+        Private _connAlias As String
         Public Property ConnAlias As String
+            Get
+                If _connAlias Is Nothing Then
+                    Return ""
+                Else
+                    Return _connAlias
+                End If
+            End Get
+            Set(value As String)
+                _connAlias = value
+            End Set
+        End Property
+
+
+
+        Public Property IsDuplicate As Boolean
+
+
         Public Property Cubes As List(Of clsCube)
 
         Private _Name As String
         Public Property Name As String
             Get
                 If Me.ConnType = enConnType.PBIDesktop And Me.ConnAlias = "" Then
-                    Return "Port:" & Me.Port.ToString
+                    Return "Unnamed PBI Desktop (Port:" & Me.Port.ToString & ")"
                 ElseIf Me.ConnType = enConnType.PBIDesktop And Me.ConnAlias <> "" Then
-                    Return Me.ConnAlias & " (Port:" & Me.Port & ")"
+                    Return Me.ConnAlias & " (Port:" & Me.Port.ToString & ")"
                 Else
                     Return Me._Name
                 End If
@@ -115,22 +177,32 @@ Public Class clsConnections
             End Get
             Set(value As C1.Win.C1FlexGrid.Node)
 
+                If value Is Nothing Then
+                    Exit Property
+                End If
+
 
                 Try
                     Me._nd = value
-                    Me._nd.Row.Grid.SetData(Me.nd.GetCellRange.r1, 0, Me.Name)
-                    Me._nd.Image = Me.Image
-                    Me._nd.Row.Grid.Rows(_nd.GetCellRange.r1).Visible = True
+                    Me._nd.Row.Grid.InvokeIfRequired(Sub()
 
-                    If Me.ConnType = enConnType.PBIDesktop And Me.Cubes.Count = 0 Then
-                        Me._nd.Row.Grid.Rows(Me._nd.GetCellRange.r1).Visible = False
-                    End If
+                                                         Try
+                                                             Me._nd.Row.Grid.SetData(Me.nd.GetCellRange.r1, 0, Me.Name)
+                                                             Me._nd.Image = Me.Image
+                                                             Me._nd.Row.Grid.Rows(_nd.GetCellRange.r1).Visible = True
+
+                                                             If Me.ConnType = enConnType.PBIDesktop And Me.Cubes.Count = 0 Then
+                                                                 Me._nd.Row.Grid.Rows(Me._nd.GetCellRange.r1).Visible = False
+                                                             End If
+                                                         Catch ex As Exception
+
+                                                         End Try
+
+
+                                                     End Sub)
+
                 Catch ex As Exception
-
                 End Try
-
-
-
 
 
 
@@ -148,6 +220,7 @@ Public Class clsConnections
             PowerBI = 1
             PBIDesktop = 2
             TabularSvr = 3
+            QueryObject = 4
         End Enum
 
         Public ReadOnly Property ConnType As enConnType
@@ -157,8 +230,22 @@ Public Class clsConnections
                 ElseIf Me._ConnectionString.ToLower.Contains("powerbi.com") Then
                     Return enConnType.PowerBI
                 Else
-                    Return enConnType.TabularSvr
+                    Dim bx As New OleDb.OleDbConnectionStringBuilder(Me._ConnectionString)
+                    Dim strApp As String = ""
+                    Dim strDataSource As String = ""
+
+                    If bx.ContainsKey("Application Name") Then
+                        strApp = bx.Item("Application Name")
+                    End If
+                    If bx.ContainsKey("Data Source") Then
+                        strDataSource = bx.Item("Data Source")
+                    End If
+                    If strApp.ToLower.Trim.StartsWith("pbixl") = True Then
+                        Return enConnType.QueryObject
+                    End If
                 End If
+                Return enConnType.TabularSvr
+
             End Get
         End Property
 
@@ -184,6 +271,9 @@ Public Class clsConnections
                 ElseIf Me.ConnType = enConnType.TabularSvr And Me.ConnState = enConnState.NotOK Then
                     Return TryCast(Me._nd.Row.Grid.Parent, dlgSelectConn).ImageList.Images("TabularSvr_NotOK.ico")
 
+                ElseIf Me.ConnType = enConnType.QueryObject Then
+                    Return TryCast(Me._nd.Row.Grid.Parent, dlgSelectConn).ImageList.Images("PBIDesktop_NotOK.ico")
+
                 End If
                 Return Nothing
             End Get
@@ -208,6 +298,7 @@ Public Class clsConnections
 
         Public Sub New(Name As String, ConnectionString As String, Port As String, Description As String)
 
+            Me.IsDuplicate = False
             Me.Name = Name
             Me.Description = Description
             Me.ConnectionString = ConnectionString
@@ -218,6 +309,11 @@ Public Class clsConnections
 
         Public Sub TestConnection()
 
+            If Me.ConnType = enConnType.QueryObject Then
+                Me.nd = Me.nd
+            End If
+
+
             Dim t = Task(Of Object).Factory.StartNew(Function()
                                                          Try
                                                              Dim conn As Object = CreateObject("ADODB.CONNECTION")
@@ -227,7 +323,7 @@ Public Class clsConnections
                                                              Dim rec As Object = CreateObject("ADODB.RECORDSET")
                                                              rec.open("Select * from $system.MDSCHEMA_CUBES", conn, 0)
 
-                                                             Me.ConnAlias = ""
+                                                             'Me.ConnAlias = ""
                                                              Me.Cubes = New List(Of clsCube)
 
                                                              Do While rec.eof = False
@@ -259,7 +355,6 @@ Public Class clsConnections
                                                              Me.nd = Me.nd
                                                              Return Nothing
                                                          Catch ex As Exception
-
                                                              'retry
                                                              If Me.ConnType = enConnType.PBIDesktop And Me.Cubes.Count > 0 And Me.Err Is Nothing Then
                                                                  System.Threading.Thread.Sleep(1000)
@@ -278,7 +373,72 @@ Public Class clsConnections
 
         End Sub
 
+
+        Public Sub TestSync()
+
+
+
+            Try
+                Dim conn As Object = CreateObject("ADODB.CONNECTION")
+                conn.connectionstring = Me.ConnectionString
+                conn.open
+
+                Dim rec As Object = CreateObject("ADODB.RECORDSET")
+                rec.open("Select * from $system.MDSCHEMA_CUBES", conn, 0)
+
+                Me.ConnAlias = ""
+                Me.Cubes = New List(Of clsCube)
+
+                Do While rec.eof = False
+                    Me.Cubes.Add(New clsCube(rec.fields("CUBE_NAME").value.ToString, rec.fields("CUBE_CAPTION").value.ToString,
+                                             rec.fields("BASE_CUBE_NAME").value.ToString))
+                    rec.movenext
+                Loop
+
+
+                rec.close
+
+                If Me.ConnType = enConnType.PBIDesktop Then
+                    rec.open("Select * from $system.MDSCHEMA_MEASURES WHERE MEASURE_NAME='pbixl'", conn, 0)
+                    Do While rec.eof = False
+                        Me.ConnAlias = rec.fields("EXPRESSION").value.ToString.Replace("""", "")
+                        Exit Do
+                    Loop
+                    rec.close : rec = Nothing
+                End If
+
+                conn.close : conn = Nothing
+
+                If Me.ConnType = enConnType.PBIDesktop And Me.Cubes.Count = 0 Then
+                    Me.ConnState = enConnState.NotOK
+                Else
+                    Me.ConnState = enConnState.OK
+                End If
+
+                Me.nd = Me.nd
+
+            Catch ex As Exception
+
+                'retry
+                If Me.ConnType = enConnType.PBIDesktop And Me.Cubes.Count > 0 And Me.Err Is Nothing Then
+                    System.Threading.Thread.Sleep(1000)
+                    Me.TestConnection()
+                End If
+
+
+                Me.Err = ex
+                Me.ConnState = enConnState.NotOK
+                Me.nd = Me.nd
+
+            End Try
+
+        End Sub
+
     End Class
+
+
+
+
 
 
     Public Class clsCube
