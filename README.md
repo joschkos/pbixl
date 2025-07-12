@@ -23,6 +23,6 @@ The Add-In is referencing a data grid which is not part of this repository.
 
 # Known Issues
 The Add-In needs Excel 2013 or higher.
-There is a bug if 2 instance of Power BI Desktop are open.
-Please do not copy a table connected to Power BI into another Workbook. 
+There is a bug if 2 instance of Power BI Desktop are open, and none is named.
+Please click connection on pbixl tab when copying a table connected to Power BI into another Workbook. 
 
