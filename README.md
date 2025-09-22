@@ -11,7 +11,7 @@ The add-in is in its early development stages, but it currently offers:
 # Getting Started
 1. Download the right version of pbixl. Check which one fits to your Excel Installation (32Bit or 64Bit).
 
-    [The Add-Ins](https://github.com/joschkos/pbixl/tree/main/Add-Ins)
+    [The Add-Ins](https://github.com/joschkos/pbixl/tree/main/Add-ins)
 
 2. The add-in can be installed by double-clicking the xll file in the zip file.
 3. After opening a Power BI Desktop File click on the pbixl tab in excel.
