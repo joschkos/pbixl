@@ -3,10 +3,10 @@ Imports System.Threading
 Imports ExcelDna.Integration
 Imports Excel = Microsoft.Office.Interop.Excel
 
-Public Module pbixl_OLEDB
+Public Module pbixl_ODBC
 
-    <ExcelFunction(Description:="pbixl OLEDB", Category:="pbixl", IsMacroType:=False, IsVolatile:=False, IsHidden:=False, Name:="pbixl.OLEDB")>
-    Public Function pbixl_OLEDBQuery(Connection As Object, Statement As Object, Hint As Object) As Object
+    <ExcelFunction(Description:="pbixl ODBC", Category:="pbixl", IsMacroType:=False, IsVolatile:=False, IsHidden:=False, Name:="pbixl.ODBC")>
+    Public Function pbixl_ODBC(Connection As Object, Statement As Object, Hint As Object) As Object
 
         If TypeOf Connection Is ExcelDna.Integration.ExcelMissing Or TypeOf Connection Is ExcelDna.Integration.ExcelEmpty Then
             Return "#pbixl Error: Please provide a server name, database name, and a query."
@@ -20,11 +20,12 @@ Public Module pbixl_OLEDB
             Hint = ""
         End If
 
+
         Dim strConn As String = Connection.ToString
         Dim strStatement As String = Statement.ToString
         Dim strHint As String = Hint.ToString
 
-        Dim res As Object = ExcelTaskUtil.RunTask("GetQuery", New Object() {strConn, Statement, strHint, Nothing}, Function(ct) pbixl_OLEDB_Async(strConn, strStatement, strHint, ct))
+        Dim res As Object = ExcelTaskUtil.RunTask("GetQuery", New Object() {strConn, Statement, strHint, Nothing}, Function(ct) pbixl_ODBC_Async(strConn, strStatement, strHint, ct))
 
         If res Is Nothing Then
             Return ""
@@ -46,7 +47,7 @@ Public Module pbixl_OLEDB
     End Function
 
 
-    Private Function pbixl_OLEDB_Async(strConn As String, strStatement As String, strHint As String, ct As CancellationToken) As Task(Of Object)
+    Private Function pbixl_ODBC_Async(strConn As String, strStatement As String, strHint As String, ct As CancellationToken) As Task(Of Object)
         Dim task1 = Task(Of Object).Factory.StartNew(Function()
                                                          Try
 
@@ -61,9 +62,9 @@ Public Module pbixl_OLEDB
 
 
                                                              Dim blnDone As Boolean = False
-                                                             Dim conn As OleDb.OleDbConnection = Nothing
-                                                             Dim cmd As OleDb.OleDbCommand = Nothing
-                                                             Dim dr As OleDb.OleDbDataReader = Nothing
+                                                             Dim conn As Odbc.OdbcConnection = Nothing
+                                                             Dim cmd As Odbc.OdbcCommand = Nothing
+                                                             Dim dr As Odbc.OdbcDataReader = Nothing
 
 
                                                              ct.Register(Function()
@@ -92,22 +93,20 @@ Public Module pbixl_OLEDB
                                                                      strConn = strConn.Substring(6)
                                                                  End If
 
-                                                                 conn = New OleDb.OleDbConnection
+                                                                 conn = New Odbc.OdbcConnection
                                                                  conn.ConnectionString = strConn
 
                                                                  Try
                                                                      conn.Open()
                                                                  Catch ex As Exception
                                                                  End Try
-                                                                 If conn.State <> ConnectionState.Open Then
+                                                                 If conn.State.ToString.ToLower <> "open" Then
                                                                      conn.Open()
                                                                  End If
 
-
-                                                                 cmd = New OleDb.OleDbCommand(strStatement, conn)
+                                                                 cmd = New Odbc.OdbcCommand(strStatement, conn)
                                                                  dr = cmd.ExecuteReader
-
-                                                                 Dim dt As New DataTable
+                                                                 Dim dt As New DataTable()
                                                                  Try
                                                                      dt.Load(dr)
                                                                  Catch ex As Exception
@@ -125,8 +124,9 @@ Public Module pbixl_OLEDB
                                                                      Else
                                                                          Throw (ex)
                                                                      End If
-                                                                 End Try
 
+
+                                                                 End Try
 
                                                                  dr.Close()
 
